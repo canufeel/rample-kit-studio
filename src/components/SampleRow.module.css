@@ -1,0 +1,381 @@
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px 22px 1fr auto;
+  /*
+   * Identity and controls on top, metadata readout underneath, the readout spanning to the
+   * right edge so it stays on one line in a narrow panel. Random-mode rows use a taller
+   * template — see `.withProbability`.
+   */
+  grid-template-areas:
+    'grip index name actions'
+    '.    .     meta meta';
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.row:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+.playing {
+  border-color: var(--color-accent-dim);
+  background: var(--color-accent-wash);
+}
+
+.invalid {
+  background: var(--color-danger-wash);
+}
+
+.invalid:hover {
+  border-color: var(--color-danger-dim);
+}
+
+.queued {
+  opacity: 0.75;
+}
+
+.grip {
+  grid-area: grip;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.grip:hover {
+  color: var(--color-text-muted);
+}
+
+.index {
+  grid-area: index;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  grid-area: name;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.nameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.iconButtonActive {
+  color: var(--color-accent);
+}
+
+.convertNeeded {
+  color: var(--color-accent);
+  background: var(--color-accent-wash);
+}
+
+/* Delete only surfaces on hover or keyboard focus — it shouldn't compete
+   with play and convert at rest. */
+.deleteButton {
+  opacity: 0;
+  color: var(--color-danger);
+}
+
+.row:hover .deleteButton,
+.deleteButton:focus-visible {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: var(--color-danger-wash);
+  color: var(--color-danger);
+}
+
+.meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.metaField {
+  white-space: nowrap;
+}
+
+/* The offending field turns red alongside the bar, so the reason is visible without
+   opening a tooltip. */
+.metaFieldBad {
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+}
+
+.separator {
+  color: var(--color-border-strong);
+}
+
+/* The red bar across an invalid row. */
+.bar {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  height: 3px;
+  margin-top: var(--space-1);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-danger) 0%,
+    var(--color-danger-dim) 60%,
+    var(--color-danger) 100%
+  );
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* In Manual preview mode the index doubles as the layer selector, so a voice can be
+   pinned to one sound instead of cycling or randomising. */
+.indexSelectable {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.indexSelectable:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.indexSelected {
+  background: var(--color-accent-wash-strong);
+  color: var(--color-accent-bright);
+  font-weight: var(--weight-bold);
+}
+
+/* ── Random-mode per-sample mute ─────────────────────────────────────────────── */
+
+.muteActive,
+.muteActive:hover {
+  border-color: var(--color-warning);
+  background: var(--color-warning-wash);
+  color: var(--color-warning);
+}
+
+/* Dimmed, not hidden: the sample is still a layer on the card, it just cannot be drawn. */
+.randomMuted .nameText,
+.randomMuted .meta {
+  opacity: 0.45;
+}
+
+.randomMuted .nameText {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-warning);
+}
+
+/* ── Random-mode probability stepper ─────────────────────────────────────────── */
+
+/*
+ * Random mode gets its own three-row template rather than squeezing the stepper into the
+ * two-row one.
+ *
+ * The stepper sits in the *actions* column, directly beneath the buttons, and is aligned to
+ * the *start* of that column rather than the end. Both alternatives look wrong for the same
+ * reason: the delete button is transparent at rest but still occupies its width, so the
+ * column's right edge is a button-width past the last button you can see, and anything
+ * aligned to it appears to overhang into empty space. Aligning left puts the stepper under
+ * the play button, where there is always something above it.
+ *
+ * The readout moves to the third row, where it keeps its full-width span and stays on one
+ * line. Only rows that actually show a stepper get this template, so nothing else in the app
+ * pays for the extra row.
+ */
+.withProbability {
+  grid-template-areas:
+    'grip index name actions'
+    '.    .     .    probability'
+    '.    .     meta meta';
+}
+
+.probability {
+  grid-area: probability;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.stepper:hover:not(:disabled) {
+  color: var(--color-accent-bright);
+  border-color: var(--color-accent);
+}
+
+.stepper:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.odds {
+  min-width: 5.5ch;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* The slot count behind the percentage — what actually reaches the card. */
+.multiplier {
+  margin-left: 2px;
+  color: var(--color-accent);
+}
+
+/* ── Duplicate-slot grouping ─────────────────────────────────────────────────── */
+
+/*
+ * Shown only on rows whose sample occupies more than one slot. A single dot on every row
+ * would be noise; the point is to answer "which of these rows are the same sample" when the
+ * names are truncated, and in Cyclic mode after the rows have been dragged apart.
+ */
+.groupDot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  cursor: help;
+}
+
+.group1 {
+  background: var(--color-group-1);
+}
+
+.group2 {
+  background: var(--color-group-2);
+}
+
+.group3 {
+  background: var(--color-group-3);
+}
+
+.group4 {
+  background: var(--color-group-4);
+}
+
+/*
+ * High contrast: the grouping dots all collapse to one system colour, and the red field and
+ * red bar stop being red. Shape has to carry what hue was carrying — each group gets a
+ * distinct outline weight, and the invalid bar becomes a visible rule rather than a tint.
+ */
+@media (forced-colors: active) {
+  .groupDot {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+  }
+
+  .group1 { background: Highlight; }
+  .group2 { background: Canvas; }
+  .group3 { background: GrayText; }
+  .group4 { background: CanvasText; }
+
+  .metaFieldBad {
+    outline: 1px solid LinkText;
+    outline-offset: 1px;
+  }
+
+  .bar {
+    background: LinkText;
+    height: 2px;
+  }
+}

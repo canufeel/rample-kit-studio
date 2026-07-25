@@ -1,0 +1,50 @@
+.label {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text);
+  text-align: left;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label:hover {
+  color: var(--color-accent-bright);
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-1);
+  border: var(--border-width) solid var(--color-accent-dim);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+/*
+ * The sequencer variant. Its rows are a fixed-width grid of controls, so the name is given
+ * a fixed box — a growing name would shove every control on the row out of alignment with
+ * the rows above and below it.
+ */
+.sm {
+  width: 11ch;
+  flex: none;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.sm.label:hover {
+  color: var(--color-accent-bright);
+}

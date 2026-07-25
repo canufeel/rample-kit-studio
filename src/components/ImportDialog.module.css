@@ -1,0 +1,189 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  max-height: min(80vh, 720px);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.headerSpacer {
+  flex: 1;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.footerSpacer {
+  flex: 1;
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.summary strong {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Notices ────────────────────────────────────────────────────────────────── */
+
+.blocker,
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-warning);
+  border-radius: var(--radius);
+  background: var(--color-warning-wash);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.blocker {
+  border-color: var(--color-danger-dim);
+  background: var(--color-danger-wash);
+}
+
+.blocker code {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-warning);
+}
+
+.blocker .icon {
+  color: var(--color-danger);
+}
+
+/* ── Kit list ───────────────────────────────────────────────────────────────── */
+
+.kitList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.kitRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-faint);
+}
+
+.kitCode {
+  width: 4ch;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent);
+}
+
+.kitVoices {
+  display: flex;
+  gap: var(--space-3);
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A voice with nothing on it is worth seeing at a glance — the device refuses a kit with
+   no voice 1, and that is the shape of card folder that causes it. */
+.voiceEmpty {
+  color: var(--color-text-faint);
+  opacity: 0.5;
+}
+
+.kitCount {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.skipped {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+/* ── Progress ───────────────────────────────────────────────────────────────── */
+
+.progressTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-accent);
+  /* Via the token, so `prefers-reduced-motion` zeroes it like everything else. */
+  transition: width var(--transition) linear;
+}
+
+.progressLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}

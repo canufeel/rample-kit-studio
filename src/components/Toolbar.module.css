@@ -1,0 +1,196 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--toolbar-height);
+  padding: 0 var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.brandAccent {
+  color: var(--color-accent);
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding: var(--space-1) 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-height);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.tabActive {
+  background: var(--color-accent-wash);
+  border-color: var(--color-accent-dim);
+  color: var(--color-accent-bright);
+}
+
+.tabLabel {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tabInput {
+  width: 4ch;
+  background: var(--color-bg);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding: 1px var(--space-1);
+  text-transform: uppercase;
+}
+
+.tabInputError {
+  border-color: var(--color-danger);
+}
+
+.tabClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-faint);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.tab:hover .tabClose,
+.tabClose:focus-visible {
+  opacity: 1;
+}
+
+.tabClose:hover {
+  background: var(--color-danger-wash);
+  color: var(--color-danger);
+}
+
+.addTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.addTab:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent-dim);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.dirtyDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.codeError {
+  position: absolute;
+  top: calc(var(--toolbar-height) - var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--radius);
+  background: var(--color-surface-raised);
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  z-index: var(--z-notices);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* ── Action groups ──────────────────────────────────────────────────────────────
+   The toolbar carries two unrelated kinds of action: moving this application's own
+   project, and talking to the SD card. They are labelled and divided so "Open" (a
+   project file) can't be mistaken for "Import" (a card). */
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.groupLabel {
+  margin-right: var(--space-1);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.groupDivider {
+  width: var(--border-width);
+  height: 20px;
+  margin: 0 var(--space-2);
+  background: var(--color-border-strong);
+}

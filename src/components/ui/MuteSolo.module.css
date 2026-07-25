@@ -1,0 +1,71 @@
+.group {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: var(--control-height-sm);
+  padding: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.button:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+/* Sequencer rows are a tighter grid than the channel headers. */
+.sm {
+  width: 20px;
+  height: 20px;
+}
+
+.muted,
+.muted:hover {
+  border-color: var(--color-warning);
+  background: var(--color-warning-wash);
+  color: var(--color-warning);
+}
+
+.soloed,
+.soloed:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-wash-strong);
+  color: var(--color-accent-bright);
+}
+
+/*
+ * An unmuted channel silenced by another channel's solo. Marked on the M button because
+ * that is where the user looks to ask "why is this quiet", and it must not look identical
+ * to an explicit mute — this state disappears the moment the solo is released.
+ */
+.dimmed {
+  border-style: dashed;
+  color: var(--color-text-faint);
+}
+
+/*
+ * Muted and soloed at once. Solo wins, so the channel is sounding — which makes a plainly
+ * lit M button a lie. Struck through rather than un-lit, because the mute is still set and
+ * comes back the moment the solo is released.
+ */
+.overridden {
+  text-decoration: line-through;
+  opacity: 0.6;
+}

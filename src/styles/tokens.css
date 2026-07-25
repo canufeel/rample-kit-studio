@@ -1,0 +1,146 @@
+/*
+ * The skin layer.
+ *
+ * Every colour, radius, border and control dimension in the app resolves through a
+ * variable defined here. No component stylesheet is allowed to write a literal colour
+ * or a raw pixel radius — that discipline is what makes the Option B "Eurorack
+ * Faceplate" / Option C "Virtual Rack" themes a matter of redefining this file rather
+ * than touching a single component.
+ *
+ * Theme: Option A — "Squarp Studio". Near-black, flat cards, one mint accent
+ * (#70be96, Squarp's brand colour) carrying every active and interactive state.
+ */
+
+:root {
+  /* ── Palette ─────────────────────────────────────────────────────────────── */
+  --color-bg: #0a0c0b;
+  --color-surface: #111514;
+  --color-surface-raised: #171c1a;
+  --color-surface-sunken: #0d100f;
+  --color-surface-hover: #1c2321;
+
+  --color-border: #232b28;
+  --color-border-strong: #313b37;
+
+  --color-text: #e4ebe8;
+  --color-text-muted: #8b9a94;
+  --color-text-faint: #5d6a65;
+
+  --color-accent: #70be96;
+  --color-accent-dim: #4d8569;
+  --color-accent-bright: #8fd4b0;
+  --color-accent-contrast: #06120c;
+  /* Accent at low alpha, for fills behind active controls. */
+  --color-accent-wash: rgba(112, 190, 150, 0.12);
+  --color-accent-wash-strong: rgba(112, 190, 150, 0.22);
+
+  --color-danger: #e06a5e;
+  --color-danger-dim: #8c3f38;
+  --color-danger-wash: rgba(224, 106, 94, 0.12);
+
+  --color-warning: #d8a657;
+  --color-warning-wash: rgba(216, 166, 87, 0.12);
+
+  --color-queued: #6f7d9c;
+  --color-queued-wash: rgba(111, 125, 156, 0.14);
+
+  /*
+   * Grouping colours, used only to tie together the layer rows that hold the same sample.
+   * They carry no status meaning, and are chosen so they cannot be mistaken for one: every
+   * hue this app uses to *say* something is warm or mint — accent green for active, amber
+   * for warning, red for invalid — so these are all cool and none of them is any of those.
+   * Saturation and lightness match the accent, so they read as part of the same palette
+   * rather than as decoration bolted on.
+   *
+   * Four is enough in practice: a voice has twelve slots, and it takes two slots before a
+   * sample is grouped at all, so four covers every realistic arrangement. They cycle beyond
+   * that, which is acceptable for a hint that sits next to the name anyway.
+   *
+   * **Ordered by separation, not by hue.** Two or three groups is the realistic case, so the
+   * pair used most often has to be the pair that is easiest to tell apart. Walking the wheel
+   * in order would have made groups 1 and 2 neighbours — cyan beside periwinkle, about 30°
+   * apart and genuinely hard to distinguish at seven pixels. Instead the first two sit at
+   * opposite ends of the range (~110° apart), the third lands in the middle of them, and
+   * only the fourth has to squeeze in.
+   */
+  --color-group-1: #5fb0c9; /* cyan,       195° */
+  --color-group-2: #c98abd; /* orchid,     305° — furthest from group 1 */
+  --color-group-3: #9d87d4; /* violet,     250° — the midpoint of the two above */
+  --color-group-4: #7f9bd8; /* blue,       222° */
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 600;
+
+  --tracking-wide: 0.08em;
+  --tracking-wider: 0.14em;
+
+  /* ── Space ───────────────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* ── Shape ───────────────────────────────────────────────────────────────── */
+  --radius-sm: 3px;
+  --radius: 5px;
+  --radius-lg: 8px;
+  --border-width: 1px;
+
+  /* ── Controls ────────────────────────────────────────────────────────────── */
+  --control-height: 30px;
+  --control-height-sm: 24px;
+  --control-padding-x: var(--space-3);
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent-dim);
+
+  /* ── Motion ──────────────────────────────────────────────────────────────── */
+  --transition-fast: 90ms ease;
+  --transition: 160ms ease;
+
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
+  --toolbar-height: 52px;
+  --panel-min-width: 300px;
+  --z-dialog: 100;
+  --z-notices: 200;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition: 0ms;
+  }
+}
+
+/*
+ * Windows High Contrast and similar modes replace the palette wholesale with a handful of
+ * system colours. Anything that says something *only* through hue stops saying it — an
+ * invalid field, a padded badge and all four grouping dots would render identically.
+ *
+ * Mapping to system colours keeps the two states that matter distinguishable, and the
+ * components add non-colour cues of their own; search for `forced-colors` to find them.
+ */
+@media (forced-colors: active) {
+  :root {
+    --color-accent: Highlight;
+    --color-accent-bright: Highlight;
+    --color-accent-dim: Highlight;
+    --color-danger: LinkText;
+    --color-warning: LinkText;
+    --color-text-faint: GrayText;
+    --color-text-muted: CanvasText;
+    --color-text: CanvasText;
+  }
+}

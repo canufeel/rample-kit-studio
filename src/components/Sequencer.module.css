@@ -1,0 +1,237 @@
+.sequencer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.channel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+}
+
+.channelSilent {
+  opacity: 0.6;
+}
+
+/* Fixed export-position marker, dimmer than the channel name so the name reads first. */
+.slot {
+  flex-shrink: 0;
+  padding: 1px var(--space-1);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: help;
+}
+
+.name {
+  width: 11ch;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/*
+ * The Trig/Rot pair. Its inner gap matches the row's own gap, so wrapping the two controls
+ * in a container occupies exactly the width they did as two separate row children.
+ */
+.euclidOnly {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Still laid out, so the columns after it stay put; just not shown and not focusable. */
+.reserved {
+  visibility: hidden;
+}
+
+.controlLabel {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-faint);
+}
+
+.number {
+  /* Wide enough for two digits plus padding: MAX_LENGTH is 64, and at 4.5ch the spin
+     buttons stole enough of the content box that "16" rendered as "1". */
+  width: 5.5ch;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spin buttons are unusable at this size and their reserved width is what clipped the
+   value. The number type is kept for the mobile keypad and arrow-key stepping. */
+.number::-webkit-inner-spin-button,
+.number::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.number {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.select {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.dice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.dice:hover:not(:disabled) {
+  color: var(--color-accent);
+  border-color: var(--color-accent-dim);
+}
+
+.dicePending {
+  color: var(--color-accent-bright);
+  border-color: var(--color-accent);
+  background: var(--color-accent-wash);
+}
+
+/* ── Step grid ──────────────────────────────────────────────────────────────── */
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.step {
+  width: 14px;
+  height: 18px;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: 2px;
+  background: var(--color-bg);
+  padding: 0;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* Every fourth step is marked so a 16-step bar can be read at a glance. */
+.stepDownbeat {
+  border-color: var(--color-text-faint);
+}
+
+.stepOn {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+}
+
+.stepEditable {
+  cursor: pointer;
+}
+
+.stepEditable:hover {
+  border-color: var(--color-accent);
+}
+
+.stepPlayhead {
+  background: var(--color-accent-bright);
+  border-color: var(--color-accent-bright);
+}
+
+.stepOn.stepPlayhead {
+  background: var(--color-accent-bright);
+}
+
+.readonlyGrid {
+  cursor: default;
+}
+
+.summary {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 8ch;
+  text-align: right;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}

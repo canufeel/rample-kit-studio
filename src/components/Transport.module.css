@@ -1,0 +1,99 @@
+.transport {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.playButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: var(--border-width) solid var(--color-accent-dim);
+  border-radius: var(--radius);
+  background: var(--color-accent-wash);
+  color: var(--color-accent-bright);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.playButton:hover:not(:disabled) {
+  background: var(--color-accent-wash-strong);
+  border-color: var(--color-accent);
+}
+
+.playing {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-faint);
+}
+
+.bpmInput {
+  /* Wide enough for three digits plus its own padding. `box-sizing: border-box` means the
+     padding eats the declared width, and at 5ch that left ~21px of content box for a
+     "120" needing 24 — so the tempo rendered clipped. Same trap as the sequencer fields. */
+  width: 8ch;
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bpmInput:focus {
+  border-color: var(--color-accent-dim);
+}
+
+.master {
+  min-width: 160px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  max-width: 44ch;
+  line-height: 1.4;
+}
+
+.polymeter {
+  color: var(--color-accent);
+}
