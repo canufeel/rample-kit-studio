@@ -1,8 +1,11 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { characterOf, characterWords } from '~/analysis/character'
+import { classify, FAMILY_LABEL, FAMILY_NAME } from '~/analysis/classify'
 import { describeFilenameTags, tagFilename, UNSURE_BELOW } from '~/analysis/filenameTags'
 import { TYPE_LABEL } from '~/analysis/types'
+import { useFeatures } from '~/store/useAnalysis'
 import { auditionSample, onVoiceActivity } from '~/audio/player'
 import type { VoiceIndex } from '~/domain/device'
 import type { ConversionTarget, Kit, Sample, Slot, Voice } from '~/domain/types'
@@ -105,8 +108,23 @@ export function SampleRow({
 
   // Derived from the name, not stored: the read is microseconds and keeping it out of the
   // model means no migration, no cache to invalidate, and no way for it to go stale.
-  // The audio tier will need storage; this one does not.
+  // The audio tier below does need storage; this one does not.
   const tags = useMemo(() => tagFilename(sample.name), [sample.name])
+
+  const features = useFeatures(sample.id)
+  const character = useMemo(() => (features ? characterOf(features) : null), [features])
+  const verdict = useMemo(() => (features ? classify(features) : null), [features])
+
+  // The badge falls back to the acoustic family, which is all the audio can honestly
+  // support — it separates a low drum from a bright one, not a kick from a tom. Naming the
+  // instrument stays with the filename, which usually knows.
+  const named = tags.type !== 'unknown'
+  const fallback = !named && verdict && verdict.family !== 'unknown' ? verdict.family : null
+  const badge = fallback ? FAMILY_LABEL[fallback] : TYPE_LABEL[tags.type]
+  const badgeTitle = fallback
+    ? `Sounds like a ${FAMILY_NAME[fallback]}. The filename says nothing, and the audio only ` +
+      'separates broad families — not which instrument it is.'
+    : describeFilenameTags(tags)
 
   // Governs the sample, not the slot, so it appears on the sample's first row only — and it
   // changes the row's grid template, hence being computed once rather than inline twice.
@@ -167,14 +185,16 @@ export function SampleRow({
       <span
         className={[
           styles.type,
-          tags.type === 'unknown' ? styles.typeNone : '',
-          tags.confidence > 0 && tags.confidence < UNSURE_BELOW ? styles.typeUnsure : '',
+          !named && !fallback ? styles.typeNone : '',
+          // A family read off the audio is shown at the same weight as a shaky filename
+          // match: both are "probably", and the row should not pretend otherwise.
+          fallback || (named && tags.confidence < UNSURE_BELOW) ? styles.typeUnsure : '',
         ]
           .filter(Boolean)
           .join(' ')}
-        title={describeFilenameTags(tags)}
+        title={badgeTitle}
       >
-        {TYPE_LABEL[tags.type]}
+        {badge}
       </span>
 
       <span className={styles.name}>
@@ -285,6 +305,23 @@ export function SampleRow({
             </span>
           </Fragment>
         ))}
+
+        {/* What it sounds like, once the audio has been measured. Appended to the format
+            readout rather than given its own line: both answer "what is this file", and a
+            second line would double every row's height for a handful of words. */}
+        {character && (
+          <>
+            <span className={styles.separator}>|</span>
+            <span className={styles.character} title="Measured from the audio">
+              {characterWords(character).join(' · ')}
+            </span>
+            {character.note && (
+              <span className={styles.note} title="Detected pitch">
+                {character.note}
+              </span>
+            )}
+          </>
+        )}
       </span>
 
       {/*

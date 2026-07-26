@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { MAX_LAYERS_PER_VOICE } from '~/domain/device'
 import type { VoiceIndex } from '~/domain/device'
 import type { Kit, Voice } from '~/domain/types'
@@ -16,6 +16,7 @@ import {
 import { activeSlots, distinctSamples, queuedSlots } from '~/domain/voice'
 import { kitComposition } from '~/analysis/composition'
 import { triggerNow } from '~/audio/player'
+import { useAnalysis } from '~/store/useAnalysis'
 import { useSession } from '~/store/useSession'
 import { SampleRow } from './SampleRow'
 import { DropZone } from './DropZone'
@@ -64,6 +65,13 @@ export function VoicePanel({ kit, voice, slot }: VoicePanelProps) {
   const target = targetForVoice(voice)
   const active = activeSlots(voice)
   const queued = queuedSlots(voice)
+
+  // Analysis is requested from here rather than from the import paths, so every way a
+  // sample can arrive — drop, card import, project load, undo — is covered by one call.
+  // The queue ignores anything already known or already failed, so re-running is free.
+  const sampleIds = useMemo(() => distinctSamples(voice), [voice])
+  const requestAnalysis = useAnalysis((s) => s.request)
+  useEffect(() => requestAnalysis(sampleIds), [sampleIds, requestAnalysis])
 
   // Counted over distinct samples, not slots: four slots holding one bad sample is one
   // problem to fix, and reporting it as four would overstate the work.

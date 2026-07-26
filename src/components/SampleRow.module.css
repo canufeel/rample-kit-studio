@@ -416,3 +416,36 @@
     height: 2px;
   }
 }
+
+/*
+ * The audio's own description, sharing the metadata line with the format readout. Set
+ * apart by colour rather than by position: the fields to its left are facts about the
+ * file, this is an interpretation of it, and the row has no space to say so in words.
+ */
+.character {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* The detected pitch. Louder than the character words because it is the one thing here a
+   musician acts on directly. */
+.note {
+  margin-left: var(--space-1);
+  padding: 0 3px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (forced-colors: active) {
+  .character {
+    font-style: normal;
+  }
+
+  /* Colour is the only thing separating the pitch from its neighbours otherwise. */
+  .note {
+    border: 1px solid CanvasText;
+  }
+}

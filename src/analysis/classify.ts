@@ -41,6 +41,21 @@ export const FAMILY_NAME: Record<AcousticFamily, string> = {
   unknown: 'unclear',
 }
 
+/**
+ * Badge text, where a filename gave no instrument and this is all there is.
+ *
+ * Deliberately coarser-looking than the instrument labels beside them — three letters
+ * against four or five — so a column of mixed sources reads as mixed at a glance rather
+ * than implying the audio identified an instrument it did not.
+ */
+export const FAMILY_LABEL: Record<AcousticFamily, string> = {
+  low: 'LOW',
+  bright: 'HI',
+  body: 'MID',
+  tonal: 'TONE',
+  unknown: '—',
+}
+
 export interface AudioVerdict {
   family: AcousticFamily
   /** 0..1. Comparable across families, so a caller can threshold on it. */
