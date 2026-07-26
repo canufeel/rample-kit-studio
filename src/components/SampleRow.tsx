@@ -1,6 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { describeFilenameTags, tagFilename, UNSURE_BELOW } from '~/analysis/filenameTags'
+import { TYPE_LABEL } from '~/analysis/types'
 import { auditionSample, onVoiceActivity } from '~/audio/player'
 import type { VoiceIndex } from '~/domain/device'
 import type { ConversionTarget, Kit, Sample, Slot, Voice } from '~/domain/types'
@@ -101,6 +103,11 @@ export function SampleRow({
   const group = slotGroups(voiceRef).get(sample.id)
   const { copy, of } = slotCopyPosition(voiceRef, slot.id)
 
+  // Derived from the name, not stored: the read is microseconds and keeping it out of the
+  // model means no migration, no cache to invalidate, and no way for it to go stale.
+  // The audio tier will need storage; this one does not.
+  const tags = useMemo(() => tagFilename(sample.name), [sample.name])
+
   // Governs the sample, not the slot, so it appears on the sample's first row only — and it
   // changes the row's grid template, hence being computed once rather than inline twice.
   const showProbability = Boolean(randomMode) && !queued && firstSlotOfSample
@@ -156,6 +163,19 @@ export function SampleRow({
       ) : (
         <span className={styles.index}>{queued ? '·' : position + 1}</span>
       )}
+
+      <span
+        className={[
+          styles.type,
+          tags.type === 'unknown' ? styles.typeNone : '',
+          tags.confidence > 0 && tags.confidence < UNSURE_BELOW ? styles.typeUnsure : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        title={describeFilenameTags(tags)}
+      >
+        {TYPE_LABEL[tags.type]}
+      </span>
 
       <span className={styles.name}>
         {/* Ties together the rows holding one sample, which is the only reliable way to see

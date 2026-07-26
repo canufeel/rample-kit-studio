@@ -1,15 +1,18 @@
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 16px 22px 1fr auto;
+  /* The type column is fixed-width rather than `auto` so the badges line up into a
+     scannable column — reading "what is on this channel" down the list is the point of
+     having them at all, and a column that shifts per row defeats it. */
+  grid-template-columns: 16px 22px 4.5ch 1fr auto;
   /*
    * Identity and controls on top, metadata readout underneath, the readout spanning to the
    * right edge so it stays on one line in a narrow panel. Random-mode rows use a taller
    * template — see `.withProbability`.
    */
   grid-template-areas:
-    'grip index name actions'
-    '.    .     meta meta';
+    'grip index type name actions'
+    '.    .     .    meta meta';
   align-items: center;
   gap: var(--space-1) var(--space-2);
   padding: var(--space-2);
@@ -87,6 +90,40 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * What the app thinks this sample is.
+ *
+ * Deliberately quiet — it sits left of the filename in every row, so anything with colour
+ * or a border would stripe the panel and pull attention away from the name, which is
+ * still what the user is reading. It reads as a label, not a status: the loud badges in
+ * this row (`queued`, `padded`) mean something is wrong or pending, and this never does.
+ */
+.type {
+  grid-area: type;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  text-align: right;
+  white-space: nowrap;
+  cursor: help;
+}
+
+/*
+ * A guess the audio has not confirmed. Dimmed rather than hidden or marked, because the
+ * useful reading is "probably a kick" — suppressing it would lose real information, and
+ * decorating it would make uncertainty look like an error.
+ */
+.typeUnsure {
+  opacity: 0.55;
+}
+
+/* Nothing matched. Present so the column keeps its width and the names stay aligned. */
+.typeNone {
+  color: var(--color-text-faint);
+  opacity: 0.4;
 }
 
 .actions {
@@ -262,9 +299,9 @@
  */
 .withProbability {
   grid-template-areas:
-    'grip index name actions'
-    '.    .     .    probability'
-    '.    .     meta meta';
+    'grip index type name actions'
+    '.    .     .    .    probability'
+    '.    .     .    meta meta';
 }
 
 .probability {
