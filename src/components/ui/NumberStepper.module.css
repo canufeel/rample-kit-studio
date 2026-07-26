@@ -1,0 +1,75 @@
+/*
+ * One bordered unit rather than three, so the group costs barely more width than the bare
+ * field it replaces — the sequencer row already wraps, and it carries three of these per
+ * channel. The − and + read as end caps of the field, not as separate buttons.
+ */
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  height: var(--control-height-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+/* The ring is worn by the group, not the field: `overflow: hidden` above would clip a
+   box-shadow drawn on the input itself. */
+.stepper:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  padding: 0;
+  border: none;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1;
+  cursor: pointer;
+  /* Held to repeat, so a drag that starts on the button must not select the value beside
+     it or hand the press to the browser's own drag handling. */
+  user-select: none;
+  touch-action: none;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.button:hover:not(:disabled) {
+  color: var(--color-accent-bright);
+  background: var(--color-accent-wash);
+}
+
+.button:active:not(:disabled) {
+  background: var(--color-accent-dim);
+  color: var(--color-text);
+}
+
+.button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.input {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.input:focus-visible {
+  box-shadow: none;
+}

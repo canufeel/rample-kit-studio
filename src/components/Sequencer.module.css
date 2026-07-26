@@ -96,35 +96,6 @@
   color: var(--color-text-faint);
 }
 
-.number {
-  /* Wide enough for two digits plus padding: MAX_LENGTH is 64, and at 4.5ch the spin
-     buttons stole enough of the content box that "16" rendered as "1". */
-  width: 5.5ch;
-  height: var(--control-height-sm);
-  padding: 0 var(--space-1);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Spin buttons are unusable at this size and their reserved width is what clipped the
-   value. The number type is kept for the mobile keypad and arrow-key stepping. */
-.number::-webkit-inner-spin-button,
-.number::-webkit-outer-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
-.number {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
 .select {
   height: var(--control-height-sm);
   padding: 0 var(--space-1);

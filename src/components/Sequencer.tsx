@@ -15,6 +15,7 @@ import { useLibrary } from '~/store/useLibrary'
 import { useActiveKit, useChannelSequence, useSession } from '~/store/useSession'
 import { ChannelName } from './ui/ChannelName'
 import { MuteSolo } from './ui/MuteSolo'
+import { NumberStepper } from './ui/NumberStepper'
 import { Segmented } from './ui/Controls'
 import { SaveIcon } from './ui/Icons'
 import styles from './Sequencer.module.css'
@@ -132,14 +133,12 @@ function Channel({ channel, slot, kit }: { channel: Voice; slot: VoiceIndex; kit
 
       <div className={styles.control}>
         <span className={styles.controlLabel}>Len</span>
-        <input
-          type="number"
-          className={styles.number}
+        <NumberStepper
           value={sequence.length}
           min={MIN_LENGTH}
           max={MAX_LENGTH}
-          onChange={(e) => updateSequence(voice, { length: Number(e.target.value) })}
-          aria-label={`${channel.name} pattern length`}
+          onChange={(length) => updateSequence(voice, { length })}
+          label={`${channel.name} pattern length`}
         />
       </div>
 
@@ -161,26 +160,22 @@ function Channel({ channel, slot, kit }: { channel: Voice; slot: VoiceIndex; kit
       >
         <div className={styles.control}>
           <span className={styles.controlLabel}>Trig</span>
-          <input
-            type="number"
-            className={styles.number}
+          <NumberStepper
             value={sequence.triggers}
             min={0}
             max={sequence.length}
-            onChange={(e) => updateSequence(voice, { triggers: Number(e.target.value) })}
-            aria-label={`${channel.name} triggers`}
+            onChange={(triggers) => updateSequence(voice, { triggers })}
+            label={`${channel.name} triggers`}
           />
         </div>
         <div className={styles.control}>
           <span className={styles.controlLabel}>Rot</span>
-          <input
-            type="number"
-            className={styles.number}
+          <NumberStepper
             value={sequence.rotation}
             min={0}
             max={Math.max(0, sequence.length - 1)}
-            onChange={(e) => updateSequence(voice, { rotation: Number(e.target.value) })}
-            aria-label={`${channel.name} rotation`}
+            onChange={(rotation) => updateSequence(voice, { rotation })}
+            label={`${channel.name} rotation`}
           />
         </div>
       </div>
