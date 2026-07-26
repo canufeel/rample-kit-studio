@@ -144,6 +144,31 @@
   margin-top: 1px;
 }
 
+/*
+ * An observation about the music, not a problem with the card. Shares the warning's shape
+ * so the column reads consistently, but drops to the neutral palette — amber here would
+ * imply the export is at risk, and it never is.
+ */
+.note {
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+}
+
+.noteIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-text-faint);
+}
+
+/* Amber and neutral are the only thing separating the two, so give the advisory note a
+   second cue where hue is unavailable. */
+@media (forced-colors: active) {
+  .note {
+    border-style: dashed;
+  }
+}
+
 .list {
   display: flex;
   flex-direction: column;

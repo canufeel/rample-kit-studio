@@ -116,7 +116,7 @@ export function issueMessage(code: IssueCode, target: ConversionTarget): string 
 
 // ── Kit-level checks ────────────────────────────────────────────────────────────
 
-export type KitWarningCode = 'noVoiceOne' | 'stereoAdjacency' | 'stereoOnLastVoice' | 'mixedTypes'
+export type KitWarningCode = 'noVoiceOne' | 'stereoAdjacency' | 'stereoOnLastVoice'
 
 export interface KitWarning {
   code: KitWarningCode

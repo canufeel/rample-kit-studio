@@ -14,6 +14,7 @@ import {
   targetForVoice,
 } from '~/domain/validation'
 import { activeSlots, distinctSamples, queuedSlots } from '~/domain/voice'
+import { kitComposition } from '~/analysis/composition'
 import { triggerNow } from '~/audio/player'
 import { useSession } from '~/store/useSession'
 import { SampleRow } from './SampleRow'
@@ -22,7 +23,7 @@ import { Badge, Button, Segmented } from './ui/Controls'
 import { Fader } from './ui/Fader'
 import { ChannelName } from './ui/ChannelName'
 import { MuteSolo } from './ui/MuteSolo'
-import { GripIcon, PlayIcon, WarningIcon } from './ui/Icons'
+import { GripIcon, InfoIcon, PlayIcon, WarningIcon } from './ui/Icons'
 import styles from './VoicePanel.module.css'
 
 /**
@@ -76,6 +77,12 @@ export function VoicePanel({ kit, voice, slot }: VoicePanelProps) {
   )
 
   const voiceWarnings = kitWarnings(kit).filter((w) => w.voice === voice.index && !w.blocking)
+  // Advisory, and about the music rather than the device — but rendered in the same place,
+  // since from the user's side "something about this channel is worth knowing" is one idea.
+  const compositionNotes = useMemo(
+    () => kitComposition(kit).filter((note) => note.voice === voice.index),
+    [kit, voice.index],
+  )
   const full = freeSlots(voice) === 0
 
   return (
@@ -156,6 +163,13 @@ export function VoicePanel({ kit, voice, slot }: VoicePanelProps) {
           <div key={warning.code} className={styles.warning} role="status">
             <WarningIcon className={styles.warningIcon} />
             <span>{warning.message}</span>
+          </div>
+        ))}
+
+        {compositionNotes.map((note) => (
+          <div key={note.code} className={`${styles.warning} ${styles.note}`} role="status">
+            <InfoIcon className={styles.noteIcon} />
+            <span>{note.message}</span>
           </div>
         ))}
 

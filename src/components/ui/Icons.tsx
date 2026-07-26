@@ -104,6 +104,16 @@ export function WarningIcon({ size = 14, className }: IconProps) {
   )
 }
 
+/** For advisory notes — distinct from WarningIcon, which means something is wrong. */
+export function InfoIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg {...base(size)} className={className}>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 7.25v4M8 4.75h.01" />
+    </svg>
+  )
+}
+
 export function FolderIcon({ size = 14, className }: IconProps) {
   return (
     <svg {...base(size)} className={className}>
