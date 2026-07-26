@@ -1,6 +1,6 @@
 import { stripExtension } from '~/domain/filename'
 import { TYPE_NAME } from './types'
-import type { Openness, Register, SampleType } from './types'
+import type { Openness, Register, SampleForm, SampleType } from './types'
 
 /**
  * Tier 0 of sample analysis: read the filename.
@@ -30,12 +30,22 @@ import type { Openness, Register, SampleType } from './types'
  */
 export function tokenise(filename: string): string[] {
   const tokens: string[] = []
+  const words: string[] = []
+
   for (const raw of stripExtension(filename).toLowerCase().split(/[^a-z0-9]+/)) {
     if (!raw) continue
+    words.push(raw)
     tokens.push(raw)
     const letters = /^([a-z]+)[0-9]+$/.exec(raw)
     if (letters) tokens.push(letters[1]!)
   }
+
+  // Adjacent pairs, joined. Compound names are split by a separator as often as not —
+  // `hi_hat`, `open_hat`, `bass_drum`, `rim_shot`, `dun_dun`, `one_shot` — and rejoining
+  // them catches every one of those with a single rule rather than a dictionary entry per
+  // spelling. Spurious pairs like `kicksnare` match nothing and cost nothing.
+  for (let i = 0; i + 1 < words.length; i++) tokens.push(words[i]! + words[i + 1]!)
+
   return tokens
 }
 
@@ -83,6 +93,13 @@ const DICTIONARY: Record<string, Entry> = {
   oh: { type: 'hat', weight: 0.8 },
   chh: { type: 'hat', weight: 0.85 },
   ohh: { type: 'hat', weight: 0.85 },
+  // Written closed up in real packs far more often than the dictionary first allowed.
+  clhat: { type: 'hat', weight: 0.9 },
+  ophat: { type: 'hat', weight: 0.9 },
+  clhh: { type: 'hat', weight: 0.85 },
+  ophh: { type: 'hat', weight: 0.85 },
+  openhat: { type: 'hat', weight: 0.95 },
+  closedhat: { type: 'hat', weight: 0.95 },
 
   // Cymbals
   ride: { type: 'cymbal', weight: 0.9 },
@@ -130,6 +147,34 @@ const DICTIONARY: Record<string, Entry> = {
   timbale: { type: 'perc', weight: 0.9 },
   cabasa: { type: 'perc', weight: 0.9 },
   block: { type: 'perc', weight: 0.7 },
+  // Hand percussion. A world-percussion pack is otherwise almost entirely unreadable —
+  // these names are unambiguous and appear in the hundreds across such libraries.
+  djembe: { type: 'perc', weight: 0.95 },
+  djeme: { type: 'perc', weight: 0.9 },
+  darbuka: { type: 'perc', weight: 0.95 },
+  doumbek: { type: 'perc', weight: 0.95 },
+  dundun: { type: 'perc', weight: 0.95 },
+  doundoun: { type: 'perc', weight: 0.95 },
+  kenkeni: { type: 'perc', weight: 0.95 },
+  sangban: { type: 'perc', weight: 0.95 },
+  gongoma: { type: 'perc', weight: 0.95 },
+  udu: { type: 'perc', weight: 0.9 },
+  cajon: { type: 'perc', weight: 0.95 },
+  taiko: { type: 'perc', weight: 0.95 },
+  surdo: { type: 'perc', weight: 0.95 },
+  dhol: { type: 'perc', weight: 0.9 },
+  bendir: { type: 'perc', weight: 0.95 },
+  riq: { type: 'perc', weight: 0.9 },
+  shekere: { type: 'perc', weight: 0.95 },
+  caxixi: { type: 'perc', weight: 0.95 },
+  berimbau: { type: 'perc', weight: 0.95 },
+  tambourim: { type: 'perc', weight: 0.9 },
+  pandeiro: { type: 'perc', weight: 0.95 },
+  castanet: { type: 'perc', weight: 0.9 },
+  woodfish: { type: 'perc', weight: 0.9 },
+  chime: { type: 'perc', weight: 0.8 },
+  chimes: { type: 'perc', weight: 0.8 },
+  gong: { type: 'perc', weight: 0.9 },
 
   // Bass — a bass *instrument*. The drum is `bd`, never a bare "bass".
   bass: { type: 'bass', weight: 0.7 },
@@ -185,13 +230,6 @@ const DICTIONARY: Record<string, Entry> = {
   reverse: { type: 'fx', weight: 0.7 },
   zap: { type: 'fx', weight: 0.8 },
 
-  // Loops
-  loop: { type: 'loop', weight: 0.85 },
-  break: { type: 'loop', weight: 0.85 },
-  breakbeat: { type: 'loop', weight: 0.95 },
-  groove: { type: 'loop', weight: 0.75 },
-  beat: { type: 'loop', weight: 0.65 },
-  bar: { type: 'loop', weight: 0.5 },
 }
 
 /** How much a competing match from a different family costs the winner's confidence. */
@@ -249,8 +287,10 @@ export interface FilenameTags {
   evidence: string | null
   openness: Openness | null
   register: Register | null
-  /** Tempo advertised in the name, as in `175bpm Break one 8.wav`. */
+  /** Tempo advertised in the name, spelled out or as a bare number. */
   tempoBpm: number | null
+  /** One hit or a bar of music. Independent of `type` — a loop can also be a kick. */
+  form: SampleForm | null
   /** A note *with an octave* — `C2`, `F#3`. A bare letter is too ambiguous to trust. */
   note: string | null
   /** Variant marker, as in `take2` or `layer3`. Groups alternates of one source. */
@@ -264,33 +304,77 @@ const EMPTY: FilenameTags = {
   openness: null,
   register: null,
   tempoBpm: null,
+  form: null,
   note: null,
   variant: null,
 }
 
+/** Plausible musical tempos. Narrower than the transport's range, on purpose — see below. */
+const MIN_TEMPO = 60
+const MAX_TEMPO = 200
+
 /**
- * A tempo the name is advertising. Bounded to plausible musical tempos so that
- * `Mode808-29` and a sample rate in the name cannot be read as one.
+ * A tempo the name is advertising, either spelled out (`128bpm`) or as a bare number.
+ *
+ * The bare-number case is worth the risk because it is how most libraries do it, and
+ * profiling a held-out library put the risk at close to nothing: a standalone 60–200
+ * number appeared in 229 loop files and 22 one-shots. The collision to worry about is
+ * drum-machine names, and they all sit outside the range — 505, 606, 626, 707, 727, 808,
+ * 909 — while machine names that *are* inside it (Juno-106, SH-101) arrive glued to
+ * letters and never tokenise as a bare number.
  */
-function readTempo(lower: string): number | null {
-  const match = /\b(\d{2,3})\s*bpm\b/.exec(lower)
-  if (!match) return null
-  const bpm = Number(match[1])
-  return bpm >= 40 && bpm <= 300 ? bpm : null
+function readTempo(tokens: readonly string[], lower: string): number | null {
+  const spelled = /\b(\d{2,3})\s*bpm\b/.exec(lower)
+  if (spelled) {
+    const bpm = Number(spelled[1])
+    if (bpm >= 40 && bpm <= 300) return bpm
+  }
+  for (const token of tokens) {
+    if (!/^\d{2,3}$/.test(token)) continue
+    const bpm = Number(token)
+    if (bpm >= MIN_TEMPO && bpm <= MAX_TEMPO) return bpm
+  }
+  return null
+}
+
+/** Tokens that say outright which of the two forms this is. */
+const LOOP_WORDS = new Set(['loop', 'loops', 'break', 'breaks', 'breakbeat', 'groove', 'grooves'])
+const ONE_SHOT_WORDS = new Set(['oneshot', 'oneshots', 'shot', 'hit', 'hits', 'single'])
+
+/**
+ * One hit or a bar of music.
+ *
+ * Explicit words win over an inferred tempo, because a pack that says `one_shot` and also
+ * carries a number is telling you the number is not a tempo. `one_shot` tokenises to
+ * `one` + `shot`, so `shot` is what is actually matched.
+ */
+function readForm(tokens: readonly string[], tempo: number | null): SampleForm | null {
+  for (const token of tokens) if (LOOP_WORDS.has(token)) return 'loop'
+  for (const token of tokens) if (ONE_SHOT_WORDS.has(token)) return 'oneShot'
+  return tempo === null ? null : 'loop'
 }
 
 /**
- * A pitch, but only when an octave digit is attached.
+ * A pitch, when the name is unambiguous about it.
  *
- * The octave is what makes this safe. Single letters are everywhere in sample names —
- * `4 PHa_D take1.wav` has a stray `D` that means nothing — and the boundary requirement
- * keeps `Lanem_B07` from reading as B0, since `b0` there is followed by another digit.
+ * Two shapes qualify, and a bare letter is neither. `C2` is safe because of the octave;
+ * `F#` is safe because of the accidental — nothing else in a filename looks like that.
+ * A lone `D`, as in `4 PHa_D take1.wav`, means nothing and is never read as a note.
+ *
+ * A flat is only accepted alongside an octave. `Eb2` is a note, but a bare `eb` is far
+ * more likely to be the tail of a word than E-flat.
  */
-function readNote(lower: string): string | null {
-  const match = /\b([a-g])(#|b)?(-1|[0-8])\b/.exec(lower)
-  if (!match) return null
-  const [, letter, accidental, octave] = match
-  return `${letter!.toUpperCase()}${accidental ?? ''}${octave}`
+function readNote(raw: string): string | null {
+  // `_` counts as a word character, so `\b` would never fire inside `High_F#` or
+  // `Needle_D#`. Separators become spaces first; `#` is kept because it is part of a note.
+  const lower = raw.replace(/[^a-z0-9#]+/gi, ' ').toLowerCase()
+  const withOctave = /\b([a-g])(#|b)?(-1|[0-8])\b/.exec(lower)
+  if (withOctave) {
+    const [, letter, accidental, octave] = withOctave
+    return `${letter!.toUpperCase()}${accidental ?? ''}${octave}`
+  }
+  const sharp = /\b([a-g])#/.exec(lower)
+  return sharp ? `${sharp[1]!.toUpperCase()}#` : null
 }
 
 function readVariant(lower: string): FilenameTags['variant'] {
@@ -328,9 +412,19 @@ export function tagFilename(filename: string): FilenameTags {
     register = IMPLIED_REGISTER[token] ?? REGISTER[token] ?? register
   }
 
-  if (!winner) {
-    return { ...EMPTY, openness, register, tempoBpm: readTempo(lower), note: readNote(lower), variant: readVariant(lower) }
+  // Read regardless of whether an instrument was found: a file can be recognisably a loop
+  // while saying nothing about what is in it.
+  const tempoBpm = readTempo(tokens, lower)
+  const rest = {
+    openness,
+    register,
+    tempoBpm,
+    form: readForm(tokens, tempoBpm),
+    note: readNote(lower),
+    variant: readVariant(lower),
   }
+
+  if (!winner) return { ...EMPTY, ...rest }
 
   const confidence = Math.max(
     0.1,
@@ -338,15 +432,12 @@ export function tagFilename(filename: string): FilenameTags {
   )
 
   return {
+    ...rest,
     type: winner.entry.type,
     confidence,
     evidence: winner.token,
     // Only meaningful where a sample can be choked; on a pad it is noise.
     openness: winner.entry.type === 'hat' || winner.entry.type === 'cymbal' ? openness : null,
-    register,
-    tempoBpm: readTempo(lower),
-    note: readNote(lower),
-    variant: readVariant(lower),
   }
 }
 

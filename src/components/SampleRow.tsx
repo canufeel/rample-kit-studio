@@ -207,6 +207,14 @@ export function SampleRow({
           />
         )}
         <span className={styles.nameText}>{sample.name}</span>
+        {/* Worth its own badge rather than a word in the character line: a loop occupies a
+            whole voice and gets triggered once a bar, where a one-shot is layered a dozen
+            deep. Confusing the two is a mistake you only hear on the device. */}
+        {tags.form === 'loop' && (
+          <Badge tone="accent">
+            {tags.tempoBpm ? `loop ${tags.tempoBpm}` : 'loop'}
+          </Badge>
+        )}
         {queued && <Badge tone="queued">queued</Badge>}
         {sample.padded && !invalid && <Badge tone="warning">padded</Badge>}
       </span>

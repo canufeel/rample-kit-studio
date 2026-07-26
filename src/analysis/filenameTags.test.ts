@@ -48,7 +48,6 @@ describe('drums, from the real card', () => {
     ['2 Shake take4.wav', 'perc'],
     ['3. FX 1.wav', 'fx'],
     ['1. Long FX 7.wav', 'fx'],
-    ['1. 175bpm Break one 8.wav', 'loop'],
     ['4. Texture 6.wav', 'fx'],
   ]
 
@@ -139,18 +138,59 @@ describe('modifiers', () => {
 })
 
 describe('tempo', () => {
-  test('is read when advertised', () => {
+  test('is read when spelled out', () => {
     expect(tagFilename('1. 175bpm Break one 8.wav').tempoBpm).toBe(175)
   })
 
-  test('needs the unit, so machine names are not tempos', () => {
+  test('is read from a bare number in the musical range', () => {
+    // How most libraries actually do it: `nn_drum_120_bay_kick.wav`.
+    expect(tagFilename('nn_drum_120_bay_kick.wav').tempoBpm).toBe(120)
+    expect(tagFilename('lft2_drum_loop_primedub_full_128.wav').tempoBpm).toBe(128)
+  })
+
+  test('drum machine names are not tempos', () => {
+    // The reason a bare number is safe: every classic machine sits outside 60-200.
+    for (const name of ['snare_one_shot_909.wav', 'kick 808 hard.wav', 'clap_626_mid.wav']) {
+      expect(tagFilename(name).tempoBpm).toBeNull()
+    }
+    // And machines that would be inside it arrive glued to letters.
+    expect(tagFilename('juno106 pad.wav').tempoBpm).toBeNull()
     expect(tagFilename('1 WS-Mode808-29 LT.wav').tempoBpm).toBeNull()
-    expect(tagFilename('2 dynacord707 04.wav').tempoBpm).toBeNull()
   })
 
   test('implausible tempos are rejected', () => {
     expect(tagFilename('kick 999bpm.wav').tempoBpm).toBeNull()
     expect(tagFilename('kick 10bpm.wav').tempoBpm).toBeNull()
+  })
+})
+
+describe('form', () => {
+  test('an explicit word decides it', () => {
+    expect(tagFilename('lft2_drum_loop_backroom_hat_128.wav').form).toBe('loop')
+    expect(tagFilename('MARS_VDM_kick_one_shot_909_drive.wav').form).toBe('oneShot')
+    expect(tagFilename('1. 175bpm Break one 8.wav').form).toBe('loop')
+  })
+
+  test('a bare tempo implies a loop', () => {
+    expect(tagFilename('nn_drum_120_water_full.wav').form).toBe('loop')
+  })
+
+  test('an explicit one-shot outranks a bare number', () => {
+    // A pack that says one_shot and also carries a number is telling you the number is
+    // not a tempo.
+    expect(tagFilename('perc_one_shot_120_thing.wav').form).toBe('oneShot')
+  })
+
+  test('is null when the name says nothing either way', () => {
+    expect(tagFilename('1 KICK 01.wav').form).toBeNull()
+  })
+
+  test('form is independent of type — a loop can also be a kick', () => {
+    // The whole reason these are two axes: forced to pick one, the tagger answered "kick"
+    // and scored as wrong against a loops/ folder.
+    const tags = tagFilename('nn_drum_120_bay_kick.wav')
+    expect(tags.type).toBe('kick')
+    expect(tags.form).toBe('loop')
   })
 })
 
@@ -163,6 +203,17 @@ describe('note', () => {
   test('a bare letter is never a note', () => {
     // `4 PHa_D take1.wav` has a stray D that means nothing.
     expect(tagFilename('4 PHa_D take1.wav').note).toBeNull()
+  })
+
+  test('an accidental stands in for an octave', () => {
+    // Real packs write `SO_PAWKO_PERC_ONE_SHOT_Knitting_Needle_D#.wav` with no octave.
+    // Safe because nothing else in a filename looks like a letter followed by a sharp.
+    expect(tagFilename('SO_PAWKO_PERC_ONE_SHOT_Moroccan_Tom_High_F#.wav').note).toBe('F#')
+    expect(tagFilename('Knitting_Needle_D#.wav').note).toBe('D#')
+  })
+
+  test('a bare flat is not a note, since it is usually the tail of a word', () => {
+    expect(tagFilename('perc_web_hit.wav').note).toBeNull()
   })
 
   test('a numbered variant is not a note', () => {
@@ -183,6 +234,28 @@ describe('variants', () => {
   test('absent when the name has none', () => {
     expect(tagFilename('1 KICK 01.wav').variant).toBeNull()
   })
+})
+
+describe('naming conventions from a second library', () => {
+  // These are verbatim from a user library the dictionary was not built against.
+  const cases: [string, string][] = [
+    ['MARS_VDM_closed_hat_one_shot_909_vari_squeak.wav', 'hat'],
+    ['nn_ophat_tree.wav', 'hat'],
+    ['PMRW_Open_Hat_Noisey.wav', 'hat'],
+    ['MARS_VDM_rim_one_shot_CR78_metal.wav', 'rim'],
+    ['004_Hi_Hat_-_NEON80S_Zenhiser.wav', 'hat'],
+    ['SO_MP_djembe_hard_hit.wav', 'perc'],
+    ['SO_MP_dun_dun_boom_ping_short_thwack.wav', 'perc'],
+    ['SO_PAWKO_PERC_ONE_SHOT_Frame_Snare_01.wav', 'snare'],
+    ['MARS_VDM_TOM_one_shot_CR78_bass.wav', 'tom'],
+    ['nn_snare_spray.wav', 'snare'],
+    ['ff_mt2_kick_one_shot_synthetic_saturated.wav', 'kick'],
+  ]
+  for (const [name, type] of cases) {
+    test(`${name} → ${type}`, () => {
+      expect(tagFilename(name).type).toBe(type as never)
+    })
+  }
 })
 
 describe('robustness', () => {

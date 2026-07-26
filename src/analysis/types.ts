@@ -29,8 +29,21 @@ export type SampleType =
   | 'chord'
   | 'vocal'
   | 'fx'
-  | 'loop'
   | 'unknown'
+
+/**
+ * Whether a sample is a single hit or a bar of music — a separate question from what
+ * instrument it is, and one this device cares about a great deal.
+ *
+ * These were one field until a held-out library showed why they cannot be. A file named
+ * `nn_drum_120_bay_kick.wav` is a kick *and* a loop; forced to choose, the tagger answered
+ * "kick" and scored as wrong against a `loops/` folder, dragging precision from 99% to 78%
+ * on its own. Both answers were right, about different things.
+ *
+ * It matters on the hardware too: a loop occupies a whole voice and gets triggered once a
+ * bar, where a one-shot is layered a dozen deep and triggered constantly.
+ */
+export type SampleForm = 'oneShot' | 'loop'
 
 /** Short label for the row badge. Kept to four characters so the column never shifts. */
 export const TYPE_LABEL: Record<SampleType, string> = {
@@ -47,7 +60,6 @@ export const TYPE_LABEL: Record<SampleType, string> = {
   chord: 'CHRD',
   vocal: 'VOX',
   fx: 'FX',
-  loop: 'LOOP',
   unknown: '—',
 }
 
@@ -66,7 +78,6 @@ export const TYPE_NAME: Record<SampleType, string> = {
   chord: 'Chord',
   vocal: 'Vocal',
   fx: 'FX',
-  loop: 'Loop',
   unknown: 'Unidentified',
 }
 
@@ -89,7 +100,6 @@ export const TYPE_ORDER: readonly SampleType[] = [
   'chord',
   'vocal',
   'fx',
-  'loop',
   'unknown',
 ]
 
