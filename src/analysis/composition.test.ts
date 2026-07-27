@@ -55,11 +55,29 @@ describe('mixed families on one channel', () => {
     )
   })
 
-  test('near neighbours are one family', () => {
-    // A snare, a clap and a rimshot on one channel is a snare layer set, not a mistake.
+  test('anything in the percussion role can share a channel', () => {
+    // Found in real use: a channel of hi-hats and rims was being flagged, and it is not a
+    // mistake — it is a percussion channel built to alternate, which is one of the more
+    // useful things this device does. The line is "would you put these on one voice",
+    // not "do these sound alike".
+    expect(kitComposition(kitWith('3 HH close.wav', '2 rimshot.wav'))).toEqual([])
     expect(kitComposition(kitWith('2 SN 01.wav', '3 CP 02.wav', '2 rimshot.wav'))).toEqual([])
-    // As are a hat and a ride — both metal.
     expect(kitComposition(kitWith('3 HH close.wav', '3 RIDE LOW 03.wav'))).toEqual([])
+    expect(kitComposition(kitWith('3 HH close.wav', '2 SN 01.wav', '3 shaker.wav'))).toEqual([])
+  })
+
+  test('low drums share a role, so kicks and toms are fine together', () => {
+    expect(kitComposition(kitWith('1 KICK 01.wav', '3 MM TOM.wav'))).toEqual([])
+  })
+
+  test('a kick and a bass note is the mistake, not the technique', () => {
+    // Bass sits with the pitched material rather than the low drums for exactly this.
+    expect(kitComposition(kitWith('1 KICK 01.wav', '2 bass C2.wav'))).toHaveLength(1)
+  })
+
+  test('crossing roles still warns', () => {
+    expect(kitComposition(kitWith('1 KICK 01.wav', '2 SN 01.wav'))).toHaveLength(1)
+    expect(kitComposition(kitWith('3 HH close.wav', '2 pad F#3.wav'))).toHaveLength(1)
   })
 
   test('fx and loops are wildcards and never trip it', () => {

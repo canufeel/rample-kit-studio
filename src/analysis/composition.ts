@@ -29,25 +29,39 @@ export interface CompositionNote {
 }
 
 /**
- * Coarse families, so that near neighbours do not trip the check.
+ * Grouped by role in the kit, not by timbre.
  *
- * A snare and a rimshot on one channel is a sound design decision; a kick and a hi-hat is
- * usually an accident. The grouping is drawn where the mistake becomes audible rather than
- * where the taxonomy has a seam.
+ * The first version of this split by sound — low, body, metal, tuned — and warned on a
+ * channel holding hi-hats and rims. That is not a mistake; it is a percussion channel
+ * built to alternate, which is one of the more useful things this device does. Warning on
+ * it was exactly the second-guessing of taste this file is supposed to avoid.
+ *
+ * The line that matters is not "do these two sound alike" but "would you have put them on
+ * the same voice". Anything in the percussion role is fair game to alternate between: a
+ * channel of hats, rims, claps and shakers is a deliberate arrangement. Mixing *roles* is
+ * what surprises people, because the roles are what the pattern is written against — a
+ * kick pattern playing a hi-hat half the time is never what was meant.
  */
-const FAMILY: Partial<Record<SampleType, string>> = {
+const ROLE: Partial<Record<SampleType, string>> = {
+  // The bottom of the kit. A channel alternating kicks and toms is a low-drum channel.
   kick: 'low',
-  bass: 'low',
-  snare: 'body',
-  clap: 'body',
-  rim: 'body',
-  tom: 'body',
-  hat: 'metal',
-  cymbal: 'metal',
+  tom: 'low',
+
+  // Everything you would write a percussion pattern for, whatever it is made of.
+  snare: 'perc',
+  clap: 'perc',
+  rim: 'perc',
+  hat: 'perc',
+  cymbal: 'perc',
   perc: 'perc',
+
+  // Pitched material. Bass belongs here rather than with the low drums: alternating a
+  // kick with a bass note is the mistake, not the technique.
+  bass: 'tuned',
   tonal: 'tuned',
   chord: 'tuned',
   vocal: 'tuned',
+
   // fx and loop are wildcards — layering an FX sweep under a kick is a deliberate move,
   // and flagging it would punish the technique. Deliberately absent, not forgotten.
 }
@@ -64,23 +78,33 @@ function listOf(items: string[]): string {
 }
 
 /**
- * The families present on one channel, with a representative type for each.
+ * What is on one channel: the roles present, and every distinct instrument.
+ *
+ * Both are needed, and they answer different questions. The roles decide *whether* to say
+ * anything; the instruments are what the message names. Reporting one instrument per role
+ * would describe a channel of kicks, snares and hats as "mixes kicks and snares", which is
+ * true but reads as though the app cannot see the third.
  *
  * Only confident tags count. A guess is not evidence enough to tell someone their channel
  * is wrong, and the whole point of the confidence number is that it can be thresholded
  * rather than believed.
  */
-function familiesOn(kit: Kit, voice: Voice): Map<string, SampleType> {
-  const found = new Map<string, SampleType>()
+function contentsOf(kit: Kit, voice: Voice): { roles: Set<string>; types: SampleType[] } {
+  const roles = new Set<string>()
+  const types: SampleType[] = []
+
   for (const sampleId of activeLayers(voice)) {
     const sample = kit.samples[sampleId]
     if (!sample) continue
     const tags = tagFilename(sample.name)
     if (tags.confidence < UNSURE_BELOW) continue
-    const family = FAMILY[tags.type]
-    if (family && !found.has(family)) found.set(family, tags.type)
+    const role = ROLE[tags.type]
+    if (!role) continue
+    roles.add(role)
+    if (!types.includes(tags.type)) types.push(tags.type)
   }
-  return found
+
+  return { roles, types }
 }
 
 /**
@@ -88,7 +112,7 @@ function familiesOn(kit: Kit, voice: Voice): Map<string, SampleType> {
  *
  * Currently one rule, and that is deliberate — see the note at the top of the file.
  *
- * A channel holding more than one family is worth saying out loud because of how the
+ * A channel holding more than one *role* is worth saying out loud because of how the
  * hardware behaves: one layer sounds per trigger, chosen by the channel's playback mode.
  * So a channel carrying a kick and a hi-hat does not play a kick with a hi-hat on top —
  * it plays one or the other, and which one is not something the pattern controls. That is
@@ -98,10 +122,10 @@ export function kitComposition(kit: Kit): CompositionNote[] {
   const notes: CompositionNote[] = []
 
   for (const voice of channelsInSlotOrder(kit)) {
-    const families = familiesOn(kit, voice)
-    if (families.size < 2) continue
+    const { roles, types } = contentsOf(kit, voice)
+    if (roles.size < 2) continue
 
-    const names = [...families.values()].map(plural)
+    const names = types.map(plural)
     notes.push({
       code: 'mixedFamilies',
       voice: voice.index,
