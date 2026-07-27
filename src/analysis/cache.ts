@@ -22,6 +22,11 @@ const STORE = 'features'
 /** Long enough that a collision is not a practical concern, short enough to read in a log. */
 const KEY_LENGTH = 16
 
+/** See the note in `runner.ts`: silent by design in production, loud in development. */
+function trace(reason: string, detail?: unknown): void {
+  if (import.meta.env.DEV) console.warn(`[analysis cache] ${reason}`, detail ?? '')
+}
+
 let dbPromise: Promise<IDBDatabase> | null = null
 
 function openDb(): Promise<IDBDatabase> {
@@ -83,8 +88,9 @@ export async function getCached(key: string): Promise<AudioFeatures | undefined>
       request.onerror = () => reject(request.error)
     })
     return stored?.version === FEATURES_VERSION ? stored : undefined
-  } catch {
+  } catch (error) {
     // A cache miss and an unreachable cache are the same thing to the caller: analyse it.
+    trace('could not read', error)
     return undefined
   }
 }
@@ -98,9 +104,10 @@ export async function putCached(key: string, features: AudioFeatures): Promise<v
       transaction.oncomplete = () => resolve()
       transaction.onerror = () => reject(transaction.error)
     })
-  } catch {
+  } catch (error) {
     // Failing to cache is not worth surfacing — the analysis already succeeded, and the
     // only cost is doing it again next time.
+    trace('could not write', error)
   }
 }
 

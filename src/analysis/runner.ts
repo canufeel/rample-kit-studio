@@ -13,6 +13,18 @@ import type { AnalyseRequest, AnalyseResponse } from './worker'
  * something else, so finishing sooner is worth less than never being noticed.
  */
 
+/**
+ * Diagnostics, development only.
+ *
+ * Every failure below is deliberately non-fatal — a sample the browser cannot decode
+ * simply has no character line, which is the right behaviour and not worth interrupting
+ * anyone over. But silent-by-design is undiagnosable when the whole pipeline is broken:
+ * a worker that fails to spawn produced no output whatsoever. In development it says so.
+ */
+function trace(reason: string, detail?: unknown): void {
+  if (import.meta.env.DEV) console.warn(`[analysis] ${reason}`, detail ?? '')
+}
+
 let worker: Worker | null = null
 const pending = new Map<string, (response: AnalyseResponse) => void>()
 
@@ -25,7 +37,8 @@ function ensureWorker(): Worker {
     pending.delete(event.data.id)
     resolve(event.data)
   }
-  worker.onerror = () => {
+  worker.onerror = (event) => {
+    trace('worker failed to start or crashed', event.message || event)
     // The worker is gone; fail everything waiting on it rather than hanging, and let the
     // next call build a fresh one.
     for (const [id, resolve] of pending) resolve({ id, ok: false, error: 'Analysis worker failed' })
@@ -66,7 +79,10 @@ function toMono(buffer: AudioBuffer): Float32Array {
  */
 export async function analyseSample(id: SampleId): Promise<AudioFeatures | null> {
   const bytes = await getAudio(id)
-  if (!bytes) return null
+  if (!bytes) {
+    trace('no stored audio for sample', id)
+    return null
+  }
 
   const key = await contentKey(bytes)
   const cached = await getCached(key)
@@ -78,12 +94,16 @@ export async function analyseSample(id: SampleId): Promise<AudioFeatures | null>
     const buffer = await decodeAtDeviceRate(bytes)
     samples = toMono(buffer)
     sampleRate = buffer.sampleRate
-  } catch {
+  } catch (error) {
+    trace('could not decode sample', { id, error })
     return null
   }
 
   const response = await runInWorker({ id, samples, sampleRate })
-  if (!response.ok) return null
+  if (!response.ok) {
+    trace('worker returned no features', { id, error: response.error })
+    return null
+  }
 
   await putCached(key, response.features)
   return response.features
