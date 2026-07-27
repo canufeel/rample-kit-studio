@@ -28,7 +28,7 @@ const fakeFeatures = (id: string) => ({ version: 1, id }) as never
 beforeEach(() => {
   calls = []
   behaviour = async (id) => fakeFeatures(id)
-  useAnalysis.setState({ features: {}, queue: [], running: false, failed: {} })
+  useAnalysis.setState({ features: {}, queue: [], burstTotal: 0, running: false, failed: {} })
 })
 
 describe('queueing', () => {
@@ -104,32 +104,42 @@ describe('failure', () => {
   })
 })
 
-describe('forgetting', () => {
-  test('drops results and failures for samples no longer open', async () => {
-    behaviour = async (id) => (id === 'b' ? null : fakeFeatures(id))
+describe('progress', () => {
+  test('the denominator counts the whole burst, not what is left', async () => {
+    // Recorded rather than asserted in place: an expectation thrown inside the stub would
+    // be caught by the drain loop's own try/catch and the test would pass regardless.
+    const seen: number[] = []
+    behaviour = async (id) => {
+      seen.push(useAnalysis.getState().burstTotal)
+      return fakeFeatures(id)
+    }
+    useAnalysis.getState().request(['a', 'b', 'c'])
+    await settle()
+
+    expect(seen).toEqual([3, 3, 3])
+  })
+
+  test('a request arriving mid-burst raises the denominator', async () => {
+    useAnalysis.getState().request(['a', 'b'])
+    useAnalysis.getState().request(['c'])
+    expect(useAnalysis.getState().burstTotal).toBe(3)
+    await settle()
+  })
+
+  test('it resets once the queue empties, so the next burst counts from zero', async () => {
     useAnalysis.getState().request(['a', 'b'])
     await settle()
+    expect(useAnalysis.getState().burstTotal).toBe(0)
 
-    useAnalysis.getState().forget(['a', 'b'])
-    expect(useAnalysis.getState().features.a).toBeUndefined()
-    expect(useAnalysis.getState().failed.b).toBeUndefined()
+    useAnalysis.getState().request(['c'])
+    expect(useAnalysis.getState().burstTotal).toBe(1)
+    await settle()
   })
 
-  test('forgetting clears the failure record, so a re-added sample is retried', async () => {
-    behaviour = async () => null
+  test('a request that queues nothing new does not move the denominator', async () => {
     useAnalysis.getState().request(['a'])
     await settle()
-
-    useAnalysis.getState().forget(['a'])
-    behaviour = async (id) => fakeFeatures(id)
     useAnalysis.getState().request(['a'])
-    await settle()
-
-    expect(calls).toEqual(['a', 'a'])
-    expect(useAnalysis.getState().features.a).toBeDefined()
-  })
-
-  test('forgetting nothing is a no-op', () => {
-    expect(() => useAnalysis.getState().forget([])).not.toThrow()
+    expect(useAnalysis.getState().burstTotal).toBe(0)
   })
 })

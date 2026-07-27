@@ -7,6 +7,7 @@ import { MAX_KITS_PER_SESSION } from '~/domain/limits'
 import type { CardPlan } from '~/domain/cardImport'
 import { NotAProjectFile, exportProject, importProject } from '~/storage/projectFile'
 import { useLibrary } from '~/store/useLibrary'
+import { useAnalysis } from '~/store/useAnalysis'
 import { useSession } from '~/store/useSession'
 import { ConfirmDialog } from './ConfirmDialog'
 import { ImportDialog } from './ImportDialog'
@@ -139,6 +140,9 @@ function ProjectFileControls() {
       const result = await exportProject(
         { kits, activeKitId, transport, master, keepAlive },
         { patterns, presets },
+        // Carried so the recipient does not spend a minute re-measuring samples that have
+        // already been measured here. Derived data: if it is absent the project still opens.
+        new Map(Object.entries(useAnalysis.getState().features)),
       )
       notify('success', `Saved ${result.filename} — ${result.samples} sample${result.samples === 1 ? '' : 's'} included.`)
       if (result.missing.length > 0) {

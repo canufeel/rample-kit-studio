@@ -3,6 +3,8 @@ import JSZip from 'jszip'
 import { buildManifest, hydrateProject } from '~/domain/project'
 import type { Sample, SampleId, Session } from '~/domain/types'
 import { createKit, makeSlot } from '~/domain/voice'
+import { FEATURES_VERSION } from '~/analysis/features'
+import type { AudioFeatures } from '~/analysis/features'
 import { NotAProjectFile, packProject, unpackProject } from './projectFile'
 
 /**
@@ -125,5 +127,59 @@ describe('rejecting files that are not projects', () => {
     // Only audio/<id>.wav counts — not a stray root file, not a nested one whose id
     // would otherwise be read as "nested/s2".
     expect([...(await unpackProject(archive)).audio.keys()]).toEqual(['s1'])
+  })
+
+  describe('the carried analysis', () => {
+    const measured = (version = FEATURES_VERSION) =>
+      ({ version, centroid: 4321, silent: false }) as unknown as AudioFeatures
+
+    test('round-trips by content key', async () => {
+      const archive = await packProject({}, new Map(), { abc123: measured() })
+      expect((await unpackProject(archive)).analysis.abc123?.centroid).toBe(4321)
+    })
+
+    test('an archive without any is empty, not an error', async () => {
+      // Every project written before this existed takes this path.
+      const archive = await packProject({}, new Map())
+      expect((await unpackProject(archive)).analysis).toEqual({})
+    })
+
+    test('an empty map writes no entry at all', async () => {
+      const archive = await packProject({}, new Map(), {})
+      const zip = await JSZip.loadAsync(archive)
+      expect(zip.file('analysis.json')).toBeNull()
+    })
+
+    test('measurements from another feature version are dropped', async () => {
+      // Mixing two generations of numbers would be worse than having none: the thresholds
+      // that read them assume one scale.
+      const archive = await packProject({}, new Map(), {
+        old: measured(FEATURES_VERSION - 1),
+        current: measured(),
+      })
+      const { analysis } = await unpackProject(archive)
+      expect(analysis.old).toBeUndefined()
+      expect(analysis.current).toBeDefined()
+    })
+
+    test('a corrupt entry does not fail the import', async () => {
+      // The whole reason this lives outside project.json: it must be skippable.
+      const zip = new JSZip()
+      zip.file('project.json', '{}')
+      zip.file('analysis.json', '{ not json')
+      const archive = await zip.generateAsync({ type: 'uint8array', compression: 'STORE' })
+
+      const { analysis } = await unpackProject(archive)
+      expect(analysis).toEqual({})
+    })
+
+    test('an entry of the wrong shape does not fail the import', async () => {
+      const zip = new JSZip()
+      zip.file('project.json', '{}')
+      zip.file('analysis.json', '["not", "an", "object"]')
+      const archive = await zip.generateAsync({ type: 'uint8array', compression: 'STORE' })
+
+      expect((await unpackProject(archive)).analysis).toEqual({})
+    })
   })
 })

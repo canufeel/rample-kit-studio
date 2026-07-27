@@ -24,6 +24,7 @@ import { channelInSlot, channelsInSlotOrder, findVoice } from '~/domain/voice'
 import { hasSavedSession } from '~/storage/sessionStore'
 import { useActiveKit, useSession } from '~/store/useSession'
 import { ExportDialog } from './components/ExportDialog'
+import { AnalysisMeter } from './components/AnalysisMeter'
 import { Library } from './components/Library'
 import { Notices } from './components/Notices'
 import { StorageMeter } from './components/StorageMeter'
@@ -258,6 +259,7 @@ export default function App() {
           {DEVICE_SAMPLE_RATE} Hz
           <span className={styles.dot} />
           <StorageMeter />
+          <AnalysisMeter />
           {previewRate !== null && previewRate !== DEVICE_SAMPLE_RATE && (
             <>
               <span className={styles.dot} />

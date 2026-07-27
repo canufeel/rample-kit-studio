@@ -1,4 +1,7 @@
 import JSZip from 'jszip'
+import { contentKey, putCached } from '~/analysis/cache'
+import { FEATURES_VERSION } from '~/analysis/features'
+import type { AudioFeatures } from '~/analysis/features'
 import { AUDIO_DIR, buildManifest, hydrateProject } from '~/domain/project'
 import type { ProjectImport } from '~/domain/project'
 import type { SampleId, SavedPattern, SavedPreset, Session } from '~/domain/types'
@@ -16,6 +19,22 @@ import { getAudio, putAudio } from './audioStore'
  */
 
 const MANIFEST_NAME = 'project.json'
+
+/**
+ * Cached analysis, carried alongside the audio.
+ *
+ * Its own entry rather than a field in the manifest, because it is the one part of the
+ * archive that is *derived*: a reader that cannot parse it, or does not know what it is,
+ * must be able to skip it and still open the project. Keeping it out of `project.json`
+ * makes that structural rather than a matter of careful coding.
+ *
+ * Keyed by content hash for the same reason the cache is: it lands straight in the
+ * recipient's cache, and samples they already own cost nothing twice.
+ */
+const ANALYSIS_NAME = 'analysis.json'
+
+/** What the archive carries: content hash to measurements. */
+export type AnalysisArchive = Record<string, AudioFeatures>
 
 export class NotAProjectFile extends Error {
   constructor(detail: string) {
@@ -38,9 +57,13 @@ function projectFilename(session: Session): string {
 export async function packProject(
   manifest: unknown,
   audio: ReadonlyMap<SampleId, ArrayBuffer>,
+  analysis?: AnalysisArchive,
 ): Promise<ArrayBuffer> {
   const zip = new JSZip()
   zip.file(MANIFEST_NAME, JSON.stringify(manifest, null, 2))
+  if (analysis && Object.keys(analysis).length > 0) {
+    zip.file(ANALYSIS_NAME, JSON.stringify(analysis))
+  }
   const folder = zip.folder(AUDIO_DIR)!
   for (const [id, bytes] of audio) folder.file(`${id}.wav`, bytes)
 
@@ -55,7 +78,7 @@ export async function packProject(
 /** Read an archive back into its manifest and audio. Throws NotAProjectFile if it isn't one. */
 export async function unpackProject(
   file: Blob | ArrayBuffer | Uint8Array,
-): Promise<{ manifest: unknown; audio: Map<SampleId, ArrayBuffer> }> {
+): Promise<{ manifest: unknown; audio: Map<SampleId, ArrayBuffer>; analysis: AnalysisArchive }> {
   let zip: JSZip
   try {
     zip = await JSZip.loadAsync(file)
@@ -81,12 +104,43 @@ export async function unpackProject(
     if (id) audio.set(id, await entry.async('arraybuffer'))
   }
 
-  return { manifest, audio }
+  return { manifest, audio, analysis: await readAnalysis(zip) }
+}
+
+/**
+ * Read the cached analysis, if there is any that this version can use.
+ *
+ * Every failure path returns an empty archive rather than throwing. Nothing here is
+ * load-bearing — a project whose analysis is missing, corrupt, or written by a version
+ * that measured things differently opens exactly the same, and re-measures in the
+ * background. The version check is the important one: mixing two generations of
+ * measurements would be worse than having none.
+ */
+async function readAnalysis(zip: JSZip): Promise<AnalysisArchive> {
+  const entry = zip.file(ANALYSIS_NAME)
+  if (!entry) return {}
+  try {
+    const parsed: unknown = JSON.parse(await entry.async('string'))
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
+    const usable: AnalysisArchive = {}
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const features = value as AudioFeatures | undefined
+      if (features?.version === FEATURES_VERSION) usable[key] = features
+    }
+    return usable
+  } catch {
+    return {}
+  }
 }
 
 export async function exportProject(
   session: Session,
   library: { patterns: readonly SavedPattern[]; presets: readonly SavedPreset[] },
+  /**
+   * Measurements to carry along, by sample id. Optional — an archive without them is a
+   * valid project that simply re-measures on the other side.
+   */
+  features?: ReadonlyMap<SampleId, AudioFeatures>,
 ): Promise<{ filename: string; samples: number; missing: string[] }> {
   const audio = new Map<SampleId, ArrayBuffer>()
   const missing: string[] = []
@@ -99,7 +153,17 @@ export async function exportProject(
     else missing.push(id)
   }
 
-  const bytes = await packProject(buildManifest(session, library), audio)
+  // Re-keyed from sample id to content hash here, where the bytes are already in hand.
+  // Doing it at the call site would mean reading every sample twice.
+  const analysis: AnalysisArchive = {}
+  if (features) {
+    for (const [id, bytes] of audio) {
+      const measured = features.get(id)
+      if (measured) analysis[await contentKey(bytes)] = measured
+    }
+  }
+
+  const bytes = await packProject(buildManifest(session, library), audio, analysis)
   const filename = projectFilename(session)
   triggerDownload(new Blob([bytes], { type: 'application/zip' }), filename)
   return { filename, samples: audio.size, missing }
@@ -115,7 +179,7 @@ export async function exportProject(
 export async function importProject(file: File): Promise<ProjectImport> {
   // The audio is read first: which samples survive the import depends on what is actually
   // present, so hydration needs that set before it runs.
-  const { manifest, audio: bytesById } = await unpackProject(file)
+  const { manifest, audio: bytesById, analysis } = await unpackProject(file)
 
   const result = hydrateProject(manifest, new Set(bytesById.keys()))
   if (!result) {
@@ -127,6 +191,12 @@ export async function importProject(file: File): Promise<ProjectImport> {
   const live = new Set(referencedSampleIds(result.session.kits))
   for (const [id, bytes] of bytesById) {
     if (live.has(id)) await putAudio(id, bytes)
+  }
+
+  // Seeded after the audio, and never allowed to fail the import: re-measuring a card is
+  // a minute of background work, but a project that will not open is the whole thing.
+  for (const [key, measured] of Object.entries(analysis)) {
+    await putCached(key, measured)
   }
 
   return result

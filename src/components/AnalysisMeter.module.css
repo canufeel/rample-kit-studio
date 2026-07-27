@@ -1,0 +1,44 @@
+/* Deliberately the same shape as the storage meter beside it — both are background facts
+   about the session, and two different treatments in one footer would read as two
+   different kinds of thing. */
+.meter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-faint);
+  cursor: help;
+}
+
+.bar {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-surface-raised);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent-dim);
+  /* Via the token, so `prefers-reduced-motion` zeroes it like everything else. */
+  transition: width var(--transition) linear;
+}
+
+.text {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The footer separates its items with a dot, but this meter is absent most of the time —
+ * a dot supplied by the footer would be left stranded. Carrying its own means the
+ * separator appears and disappears with the thing it separates.
+ */
+.meter::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}

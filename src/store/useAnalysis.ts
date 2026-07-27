@@ -16,19 +16,26 @@ interface AnalysisState {
   features: Record<SampleId, AudioFeatures>
   /** Ids queued or in flight, so the UI can show progress and callers can avoid re-queuing. */
   queue: SampleId[]
+  /**
+   * How many were queued in the current burst, for a progress denominator.
+   *
+   * A high-water mark rather than a library total, and it resets when the queue empties.
+   * "412 of 2000" would be wrong the moment a second card is imported, and what the user
+   * wants to know is how much of *this* wait is left.
+   */
+  burstTotal: number
   running: boolean
   /** Ids that produced nothing, so a failure is not retried on every render. */
   failed: Record<SampleId, true>
 
   /** Queue anything not already known, analysed or failed. Returns immediately. */
   request: (ids: readonly SampleId[]) => void
-  /** Drop everything for samples that are no longer open. */
-  forget: (ids: readonly SampleId[]) => void
 }
 
 export const useAnalysis = create<AnalysisState>((set, get) => ({
   features: {},
   queue: [],
+  burstTotal: 0,
   running: false,
   failed: {},
 
@@ -38,21 +45,11 @@ export const useAnalysis = create<AnalysisState>((set, get) => ({
     const wanted = ids.filter((id) => !features[id] && !failed[id] && !queued.has(id))
     if (wanted.length === 0) return
 
-    set((state) => ({ queue: [...state.queue, ...wanted] }))
+    set((state) => ({
+      queue: [...state.queue, ...wanted],
+      burstTotal: state.burstTotal + wanted.length,
+    }))
     if (!get().running) void drain(set, get)
-  },
-
-  forget: (ids) => {
-    if (ids.length === 0) return
-    set((state) => {
-      const features = { ...state.features }
-      const failed = { ...state.failed }
-      for (const id of ids) {
-        delete features[id]
-        delete failed[id]
-      }
-      return { features, failed }
-    })
   },
 }))
 
@@ -92,7 +89,9 @@ async function drain(
       )
     }
   } finally {
-    set({ running: false })
+    // The burst is over, so the next one counts from zero rather than from a denominator
+    // the user has already watched fill.
+    set({ running: false, burstTotal: 0 })
   }
 }
 
@@ -101,7 +100,10 @@ export function useFeatures(id: SampleId): AudioFeatures | undefined {
   return useAnalysis((s) => s.features[id])
 }
 
-/** How many samples are still waiting, for a progress readout. */
-export function useAnalysisPending(): number {
-  return useAnalysis((s) => s.queue.length)
+/** Progress through the current burst, or null when nothing is running. */
+export function useAnalysisProgress(): { done: number; total: number } | null {
+  const pending = useAnalysis((s) => s.queue.length)
+  const total = useAnalysis((s) => s.burstTotal)
+  if (pending === 0 || total === 0) return null
+  return { done: Math.max(0, total - pending), total }
 }
